@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"github.austin.utexas.edu/kriegrj/amqp"
 	"github.austin.utexas.edu/kriegrj/hasenachrichtwarteschlange/nutzwert"
 	"log"
@@ -26,7 +27,10 @@ func main() {
 	)
 	nutzwert.FailOnError(err, "Failed to declare a queue")
 
-	body := "what's up, doc?"
+	m := nutzwert.Message{"chuckeffinstrong", "Charlie Strong", "former employee", ""}
+	body, err := json.Marshal(m)
+	nutzwert.FailOnError(err, "Failed to marshal JSON")
+
 	err = ch.Publish(
 		"",     // exchange
 		q.Name, // routing key
@@ -34,8 +38,12 @@ func main() {
 		false,  // immediate
 		amqp.Publishing{
 			ContentType: "text/plain",
-			Body:        []byte(body),
+			Body:        body,
 		})
-	log.Printf(" [x] Sent %s", body)
+
+	var decodedMsg nutzwert.Message
+	err = json.Unmarshal(body, &decodedMsg)
+	nutzwert.FailOnError(err, "Failed to unmarshal JSON")
+	log.Printf(" [x] Sent %s", decodedMsg)
 	nutzwert.FailOnError(err, "Failed to publish a message")
 }
